@@ -46,7 +46,7 @@ debug: image
 	$(QEMU) \
 	-daemonize \
 	-m 128M \
-	-s -S 
+	-s -S \
 	-drive file=$(IMAGE),index=0,media=disk,format=raw
 
 # 远程调试Ctrl + a c可以切入qemu

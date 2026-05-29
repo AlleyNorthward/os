@@ -42,7 +42,7 @@ debug: image
 	$(QEMU) \
 	-daemonize \
 	-m 128M \
-	-s -S 
+	-s -S \
 	-drive file=$(IMAGE),index=0,media=disk,format=raw
 
 ndebug: image

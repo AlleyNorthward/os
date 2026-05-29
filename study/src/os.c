@@ -44,13 +44,3 @@ void os_init(void){
   pg_dir[MAP_ADDR >> 22] = (u32)page_table | PDE_P | PDE_W | PDE_U;
   page_table[(MAP_ADDR >> 12) & 0x3FF] = (u32)map_phy_buffer | PDE_P | PDE_W | PDE_U;
 }
-
-
-
-
-
-
-
-
-
-

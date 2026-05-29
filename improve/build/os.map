@@ -1,0 +1,110 @@
+
+Merging object attributes
+
+
+Discarded input sections
+
+ .comment       0x00000000       0x27 build/os.o
+ .note.GNU-stack
+                0x00000000        0x0 build/os.o
+
+Memory Configuration
+
+Name             Origin             Length             Attributes
+*default*        0x00000000         0xffffffff
+
+Linker script and memory map
+
+                0x00007c00                        . = 0x7c00
+
+.boot           0x00007c00      0x200
+ *(.boot)
+ .boot          0x00007c00      0x200 build/start.o
+                0x00007c00                _start
+                0x00000001                        ASSERT ((SIZEOF (.boot) == 0x200), boot sector must be exactly 512 bytes)
+                0x00007e00                        . = 0x7e00
+
+.protect32      0x00007e00       0x15
+ *(.text32)
+ .text32        0x00007e00       0x15 build/start.o
+                0x00007e00                _start_32
+ *(.text*)
+ .text          0x00007e15        0x0 build/start.o
+ .text          0x00007e15        0x0 build/os.o
+
+.iplt           0x00007e15        0x0
+ .iplt          0x00007e15        0x0 build/start.o
+
+.rel.dyn        0x00007e18        0x0
+ .rel.got       0x00007e18        0x0 build/start.o
+ .rel.iplt      0x00007e18        0x0 build/start.o
+
+.rodata
+ *(.rodata*)
+
+.data           0x00007e18       0x1e
+ *(.data*)
+ .data          0x00007e18       0x1e build/start.o
+ .data          0x00007e36        0x0 build/os.o
+
+.got            0x00007e38        0x0
+ .got           0x00007e38        0x0 build/start.o
+
+.got.plt        0x00007e38        0x0
+ .got.plt       0x00007e38        0x0 build/start.o
+
+.igot.plt       0x00007e38        0x0
+ .igot.plt      0x00007e38        0x0 build/start.o
+
+.bss            0x00007e36        0x0
+ *(.bss*)
+ .bss           0x00007e36        0x0 build/start.o
+ .bss           0x00007e36        0x0 build/os.o
+ *(COMMON)
+
+/DISCARD/
+ *(.eh_frame)
+ *(.comment)
+ *(.note*)
+ *(.gnu.property)
+LOAD build/start.o
+LOAD build/os.o
+OUTPUT(build/os.elf elf32-i386)
+
+.debug_line     0x00000000       0xa7
+ .debug_line    0x00000000       0x72 build/start.o
+ .debug_line    0x00000072       0x35 build/os.o
+
+.debug_line_str
+                0x00000000       0x2c
+ .debug_line_str
+                0x00000000       0x2c build/start.o
+                                 0x23 (size before relaxing)
+ .debug_line_str
+                0x0000002c        0x0 build/os.o
+                                 0x40 (size before relaxing)
+
+.debug_info     0x00000000       0x5c
+ .debug_info    0x00000000       0x23 build/start.o
+ .debug_info    0x00000023       0x39 build/os.o
+
+.debug_abbrev   0x00000000       0x33
+ .debug_abbrev  0x00000000       0x12 build/start.o
+ .debug_abbrev  0x00000012       0x21 build/os.o
+
+.debug_aranges  0x00000000       0x40
+ .debug_aranges
+                0x00000000       0x28 build/start.o
+ .debug_aranges
+                0x00000028       0x18 build/os.o
+
+.debug_str      0x00000000      0x106
+ .debug_str     0x00000000      0x106 build/start.o
+                                 0x2f (size before relaxing)
+ .debug_str     0x00000106        0x0 build/os.o
+                                 0xe4 (size before relaxing)
+
+.debug_rnglists
+                0x00000000       0x1a
+ .debug_rnglists
+                0x00000000       0x1a build/start.o
