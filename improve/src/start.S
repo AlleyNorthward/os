@@ -27,6 +27,7 @@ read_stage2:
 
   cli
   lgdt [gdt_desc]
+  lidt [idt_desc]
 
   mov $1, %eax
   lmsw %ax
@@ -40,7 +41,7 @@ hang:
 
 .section .text32, "ax"
 .code32
-.global _start_32
+.global _start_32, timer_init
 
 _start_32:
   mov $KERNEL_DATA_SEG, %ax
@@ -63,7 +64,19 @@ _start_32:
   mov %cr0, %eax
   orl $(1 << 31), %eax
   mov %eax, %cr0
+
+  sti
   jmp .
+
+timer_init:
+  push %ds
+  pusha
+  mov $0x20, %al
+  outb %al, $0x20
+
+  popa
+  pop %ds
+  iret
 
 .section .data
 .align 8
@@ -78,6 +91,9 @@ gdt_desc:
 .word gdt_end - gdt_table - 1
 .long gdt_table
 
+idt_desc:
+.word (256 * 8) - 1
+.long idt_table
 
 .align 4096
 .global pg_dir
