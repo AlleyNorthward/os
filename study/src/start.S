@@ -1,7 +1,7 @@
 #include "os.h"
 
 .code16
-.global _start
+.global _start, timer_init
 
 .text
 _start:
@@ -23,11 +23,11 @@ read_self_all:
 
   cli
   lgdt [gdt_desc]
+  lidt [idt_desc]
 
   mov $1, %eax
   lmsw %ax
   jmp $KERNEL_CODE_SEG, $_start_32
-
 
 .org 0x1fe
 .byte 0x55, 0xaa
@@ -50,27 +50,30 @@ _start_32:
   mov %eax, %cr3
 
   mov %cr4, %eax
-  mov $(1 << 4), %eax
+  orl $(1 << 4), %eax
   mov %eax, %cr4
 
   mov %cr0, %eax
   orl $(1 << 31), %eax
   mov %eax, %cr0
+
+  sti
   jmp .
+
+timer_init:
+  push %ds
+  pusha
+  mov $0x20, %al
+  outb %al, $0x20
+
+  popa
+  pop %ds
+  iret
 
 gdt_desc:
 .word (256 * 8) - 1
 .long gdt_table
 
-
-
-
-
-
-
-
-
-
-
-
-
+idt_desc:
+.word (256 * 8) - 1
+.long idt_table

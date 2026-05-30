@@ -51,6 +51,18 @@ _start_32:
   mov %ax, %fs
   mov $_start, %esp
 
+  call os_init
+
+  mov $pg_dir, %eax
+  mov %eax, %cr3
+
+  mov %cr4, %eax
+  orl $(1 << 4), %eax
+  mov %eax, %cr4
+
+  mov %cr0, %eax
+  orl $(1 << 31), %eax
+  mov %eax, %cr0
   jmp .
 
 .section .data
@@ -65,3 +77,11 @@ gdt_end:
 gdt_desc:
 .word gdt_end - gdt_table - 1
 .long gdt_table
+
+
+.align 4096
+.global pg_dir
+
+pg_dir:
+.long 0 + PDE_P + PDE_W + PDE_U + PDE_PS
+.fill 1023, 4, 0

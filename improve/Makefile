@@ -24,8 +24,6 @@ $(BUILD)/start.o: $(SRC)/start.S | $(BUILD)
 $(BUILD)/os.o: $(SRC)/os.c $(SRC)/os.h | $(BUILD)
 	$(TOOL_PREFIX)gcc $(CFLAGS) $< -o $@
 
-# $(ELF): $(BUILD)/start.o $(BUILD)/os.o
-# 	$(TOOL_PREFIX)ld -m elf_i386 -Ttext=0x7c00 $^ -o $@
 $(ELF): $(BUILD)/start.o $(BUILD)/os.o $(LDSCRIPT)
 	$(TOOL_PREFIX)ld -m elf_i386 -T $(LDSCRIPT) -Map=$(BUILD)/os.map \
 	$(BUILD)/start.o $(BUILD)/os.o -o $@
