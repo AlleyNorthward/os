@@ -169,7 +169,6 @@ void outb(u8 data, u16 port) {
 
 void task_sched(void) {
   static int task_tss = TASK0_TSS_SEG;
-
   task_tss = (task_tss == TASK0_TSS_SEG) ? TASK1_TSS_SEG : TASK0_TSS_SEG;
 
   u32 addr[] = {0, task_tss};

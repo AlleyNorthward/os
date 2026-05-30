@@ -60,13 +60,13 @@ _start_32:
   mov $TASK0_TSS_SEG, %ax
   ltr %ax
 
-  mov $TASK0_TSS_SEG, %ax
+  mov $TASK0_LDT_SEG, %ax
   lldt %ax
 
-  push $APP_DATA_SEG
+  push $TASK_DATA_SEG
   push $task0_dpl3_stack + 1024 * 4
   push $0x202
-  push $APP_CODE_SEG
+  push $TASK_CODE_SEG
   push $task0_entry
 
   iret
