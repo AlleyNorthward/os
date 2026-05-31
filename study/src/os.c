@@ -1,4 +1,5 @@
 #include "os.h"
+#include "tinyfs.h"
 
 typedef unsigned char u8;
 typedef unsigned short u16;
@@ -51,10 +52,47 @@ void sys_show(char *str, char color) {
       [color] "m"(color), [str] "m"(str), [id] "r"(2));
 }
 
+static void task_show_file(char *path, char color) {
+  char buf[80];
+  int n = tinyfs_read(path, buf, sizeof(buf) - 1);
+
+  sys_show("tinyfs read:", color);
+  sys_show(path, color);
+  if (n < 0) {
+    sys_show("read failed", color);
+    return;
+  }
+
+  buf[n] = 0;
+  sys_show(buf, color);
+}
+
+static void task_show_root(char color) {
+  struct tinyfs_dir_view entries[8];
+  int i;
+  int n = tinyfs_list_root(entries, 8);
+
+  sys_show("tinyfs root:", color);
+  if (n < 0) {
+    sys_show("list failed", color);
+    return;
+  }
+
+  for (i = 0; i < n; ++i) {
+    sys_show(entries[i].name, color);
+  }
+}
+
 void task0(void) {
   char *str = "task a: 1234";
   u8 color = 0;
+  int shown = 0;
   for (;;) {
+    if (!shown) {
+      task_show_file("/hello", 0x0e);
+      task_show_file("/note", 0x0f);
+      shown = 1;
+    }
     sys_show(str, color++);
   }
 }
@@ -62,7 +100,12 @@ void task0(void) {
 void task1(void) {
   char *str = "task b: 5678";
   u8 color = 0xff;
+  int shown = 0;
   for (;;) {
+    if (!shown) {
+      task_show_root(0x0a);
+      shown = 1;
+    }
     sys_show(str, color--);
   }
 }
@@ -150,11 +193,11 @@ struct {
     [KERNEL_DATA_SEG / 8] = {0xffff, 0x0000, 0x9200, 0x00cf},
     [APP_CODE_SEG / 8] = {0xffff, 0x0000, 0xfa00, 0x00cf},
     [APP_DATA_SEG / 8] = {0xffff, 0x0000, 0xf300, 0x00cf},
-    [TASK0_TSS_SEG / 8] = {0x68, 0, 0xe900, 0x0},
-    [TASK1_TSS_SEG / 8] = {0x68, 0, 0xe900, 0x0},
+    [TASK0_TSS_SEG / 8] = {sizeof(task0_tss) - 1, 0, 0xe900, 0x0},
+    [TASK1_TSS_SEG / 8] = {sizeof(task1_tss) - 1, 0, 0xe900, 0x0},
     [SYSCALL_SEG / 8] = {0x0000, KERNEL_CODE_SEG, 0xec03, 0},
-    [TASK0_LDT_SEG / 8] = {sizeof(task0_ldt_table) - 1, 0x0, 0xe200, 0x00cf},
-    [TASK1_LDT_SEG / 8] = {sizeof(task1_ldt_table) - 1, 0x0, 0xe200, 0x00cf}};
+    [TASK0_LDT_SEG / 8] = {sizeof(task0_ldt_table) - 1, 0x0, 0xe200, 0},
+    [TASK1_LDT_SEG / 8] = {sizeof(task1_ldt_table) - 1, 0x0, 0xe200, 0}};
 
 struct {
   u16 offset_l;
@@ -162,6 +205,23 @@ struct {
   u16 attr;
   u16 offset_h;
 } idt_table[256] __attribute__((aligned(8))) = {1};
+
+static void set_descriptor_base(u16 selector, u32 base) {
+  u16 idx = selector / 8;
+
+  gdt_table[idx].base_l = base & 0xffff;
+  gdt_table[idx].basehl_attr =
+      (gdt_table[idx].basehl_attr & 0xff00) | ((base >> 16) & 0xff);
+  gdt_table[idx].base_limit =
+      (gdt_table[idx].base_limit & 0x00ff) | ((base >> 24) << 8);
+}
+
+static void set_call_gate_offset(u16 selector, u32 offset) {
+  u16 idx = selector / 8;
+
+  gdt_table[idx].limit_l = offset & 0xffff;
+  gdt_table[idx].base_limit = offset >> 16;
+}
 
 void outb(u8 data, u16 port) {
   __asm__ __volatile__("outb %[v], %[p]" ::[p] "d"(port), [v] "a"(data));
@@ -197,11 +257,11 @@ void os_init(void) {
   idt_table[0x20].selector = KERNEL_CODE_SEG;
   idt_table[0x20].attr = 0x8e00;
 
-  gdt_table[TASK0_TSS_SEG / 8].base_l = (u16)(u32)task0_tss;
-  gdt_table[TASK1_TSS_SEG / 8].base_l = (u16)(u32)task1_tss;
-  gdt_table[SYSCALL_SEG / 8].limit_l = (u16)(u32)syscall_handler;
-  gdt_table[TASK0_LDT_SEG / 8].base_l = (u32)task0_ldt_table;
-  gdt_table[TASK1_LDT_SEG / 8].base_l = (u32)task1_ldt_table;
+  set_descriptor_base(TASK0_TSS_SEG, (u32)task0_tss);
+  set_descriptor_base(TASK1_TSS_SEG, (u32)task1_tss);
+  set_descriptor_base(TASK0_LDT_SEG, (u32)task0_ldt_table);
+  set_descriptor_base(TASK1_LDT_SEG, (u32)task1_ldt_table);
+  set_call_gate_offset(SYSCALL_SEG, (u32)syscall_handler);
 
   pg_dir[MAP_ADDR >> 22] = (u32)page_table | PDE_P | PDE_W | PDE_U;
   page_table[(MAP_ADDR >> 12) & 0x3FF] =

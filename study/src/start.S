@@ -2,6 +2,7 @@
 
 .code16
 .global _start, timer_init, syscall_handler
+.extern tinyfs_boot
 
 .text
 _start:
@@ -45,6 +46,7 @@ _start_32:
   mov $_start, %esp
 
   call os_init
+  call tinyfs_boot
 
   mov $pg_dir, %eax
   mov %eax, %cr3

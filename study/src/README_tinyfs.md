@@ -72,6 +72,46 @@ BIOS
   -> task0/task1 使用 tinyfs API
 ```
 
+## 为什么这次不会卡在 iret 后
+
+`iret` 到 task0 前，CPU 会依赖这些东西：
+
+```text
+TR  -> GDT 里的 TASK0_TSS 描述符
+LDTR -> GDT 里的 TASK0_LDT 描述符
+CS  -> LDT 里的 TASK_CODE_SEG 描述符
+SS  -> LDT 里的 TASK_DATA_SEG 描述符
+```
+
+如果 TSS/LDT 描述符里的 base 只写低 16 位，那么只要 `task0_tss` 或 `task0_ldt_table` 的地址超过 `0xffff`，CPU 就会去错误位置读取 TSS/LDT。结果通常是：
+
+```text
+iret
+  -> 加载用户态 CS/SS
+  -> 描述符地址错误
+  -> #GP 或 #TS
+  -> 没有对应异常处理
+  -> triple fault
+  -> 虚拟机重启，看起来像又回到开头
+```
+
+所以现在 `os.c` 使用 `set_descriptor_base()` 写完整 32 位 base：
+
+```text
+base[15:0]   -> descriptor.base_l
+base[23:16]  -> descriptor.basehl_attr 的低 8 位
+base[31:24]  -> descriptor.base_limit 的高 8 位
+```
+
+系统调用使用的 call gate 也一样。`sys_show()` 会通过 `lcall` 进入 `syscall_handler`，call gate 里的 offset 也必须是完整 32 位：
+
+```text
+offset[15:0]  -> descriptor.limit_l
+offset[31:16] -> descriptor.base_limit
+```
+
+否则 task0 已经 `iret` 成功了，但第一次 `sys_show()` 仍然可能跳到错误地址，让系统像“iret 后失败”一样崩掉。
+
 其中 tinyfs 的初始化发生在：
 
 ```text
