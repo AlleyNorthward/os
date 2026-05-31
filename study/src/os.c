@@ -1,5 +1,4 @@
 #include "os.h"
-#include "tinyfs.h"
 
 typedef unsigned char u8;
 typedef unsigned short u16;
@@ -52,47 +51,10 @@ void sys_show(char *str, char color) {
       [color] "m"(color), [str] "m"(str), [id] "r"(2));
 }
 
-static void task_show_file(char *path, char color) {
-  char buf[80];
-  int n = tinyfs_read(path, buf, sizeof(buf) - 1);
-
-  sys_show("tinyfs read:", color);
-  sys_show(path, color);
-  if (n < 0) {
-    sys_show("read failed", color);
-    return;
-  }
-
-  buf[n] = 0;
-  sys_show(buf, color);
-}
-
-static void task_show_root(char color) {
-  struct tinyfs_dir_view entries[8];
-  int i;
-  int n = tinyfs_list_root(entries, 8);
-
-  sys_show("tinyfs root:", color);
-  if (n < 0) {
-    sys_show("list failed", color);
-    return;
-  }
-
-  for (i = 0; i < n; ++i) {
-    sys_show(entries[i].name, color);
-  }
-}
-
 void task0(void) {
   char *str = "task a: 1234";
   u8 color = 0;
-  int shown = 0;
   for (;;) {
-    if (!shown) {
-      task_show_file("/hello", 0x0e);
-      task_show_file("/note", 0x0f);
-      shown = 1;
-    }
     sys_show(str, color++);
   }
 }
@@ -100,12 +62,7 @@ void task0(void) {
 void task1(void) {
   char *str = "task b: 5678";
   u8 color = 0xff;
-  int shown = 0;
   for (;;) {
-    if (!shown) {
-      task_show_root(0x0a);
-      shown = 1;
-    }
     sys_show(str, color--);
   }
 }
