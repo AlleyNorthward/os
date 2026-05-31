@@ -7,7 +7,6 @@ BUILD = build
 IMAGE = ../image/disk.img
 ELF = $(BUILD)/os.elf
 BIN = $(BUILD)/os.bin
-OBJS = $(BUILD)/start.o $(BUILD)/os.o $(BUILD)/tinyfs.o
 
 CFLAGS = -g -c -O0 -m32 -ffreestanding -fno-pie -fno-stack-protector -nostdlib -nostdinc
 
@@ -18,16 +17,13 @@ all: image
 $(BUILD):
 	mkdir -p $(BUILD)
 
-$(BUILD)/start.o: $(SRC)/start.S $(SRC)/os.h | $(BUILD)
+$(BUILD)/start.o: $(SRC)/start.S | $(BUILD)
 	$(TOOL_PREFIX)gcc $(CFLAGS) $< -o $@
 
-$(BUILD)/os.o: $(SRC)/os.c $(SRC)/os.h $(SRC)/tinyfs.h | $(BUILD)
+$(BUILD)/os.o: $(SRC)/os.c $(SRC)/os.h | $(BUILD)
 	$(TOOL_PREFIX)gcc $(CFLAGS) $< -o $@
 
-$(BUILD)/tinyfs.o: $(SRC)/tinyfs.c $(SRC)/tinyfs.h | $(BUILD)
-	$(TOOL_PREFIX)gcc $(CFLAGS) $< -o $@
-
-$(ELF): $(OBJS)
+$(ELF): $(BUILD)/start.o $(BUILD)/os.o
 	$(TOOL_PREFIX)ld -m elf_i386 -Ttext=0x7c00 $^ -o $@
 
 $(BIN): $(ELF)
